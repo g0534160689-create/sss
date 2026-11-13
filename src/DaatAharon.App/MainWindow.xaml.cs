@@ -1,0 +1,111 @@
+using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
+using DaatAharon.Core.Links;
+using DaatAharon.Infrastructure.Links;
+
+namespace DaatAharon.App;
+
+public partial class MainWindow : Window
+{
+    private readonly SqliteLinkRepository _repository;
+    public ObservableCollection<LinkItem> Links { get; } = [];
+    public LinkItem? SelectedLink { get; set; }
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        DataContext = this;
+        var dataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DaatAharon");
+        _repository = new SqliteLinkRepository(Path.Combine(dataDirectory, "links.db"));
+        Loaded += MainWindow_Loaded;
+        Closed += (_, _) => Browser.Dispose();
+    }
+
+    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await _repository.InitializeAsync();
+            foreach (var link in await _repository.GetAllAsync()) Links.Add(link);
+            await Browser.EnsureCoreWebView2Async();
+            Browser.CoreWebView2.NavigationStarting += (_, args) =>
+            {
+                if (!LinkAddress.TryNormalize(args.Uri, out _))
+                {
+                    args.Cancel = true;
+                    BrowserStatus.Text = "הניווט נחסם: כתובת לא תקינה או פרוטוקול לא מאושר";
+                }
+            };
+            Browser.CoreWebView2.NewWindowRequested += (_, args) => args.Handled = true;
+            BrowserStatus.Text = "מוכן — הקישורים נשמרים במחשב זה";
+        }
+        catch (Exception ex)
+        {
+            BrowserStatus.Text = "שגיאה באתחול. פרטים נרשמו בחלון ההודעה.";
+            MessageBox.Show(ex.Message, "שגיאה באתחול", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void AddLink_Click(object sender, RoutedEventArgs e)
+    {
+        var title = TitleInput.Text.Trim();
+        var category = string.IsNullOrWhiteSpace(CategoryInput.Text) ? "כללי" : CategoryInput.Text.Trim();
+        if (title.Length is 0 or > 120 || !LinkAddress.TryNormalize(UrlInput.Text, out var url))
+        {
+            MessageBox.Show("יש להזין שם באורך 1–120 תווים וכתובת HTTP או HTTPS תקינה ללא פרטי משתמש.", "בדיקת קישור", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            var link = new LinkItem(Guid.NewGuid(), title, url, category, DateTimeOffset.UtcNow);
+            await _repository.AddAsync(link);
+            Links.Add(link);
+            TitleInput.Clear();
+            UrlInput.Clear();
+            BrowserStatus.Text = "הקישור נשמר בהצלחה";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "לא ניתן לשמור את הקישור", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void DeleteLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (LinksList.SelectedItem is not LinkItem selected) return;
+        if (MessageBox.Show($"למחוק את '{selected.Title}'?", "אישור מחיקה", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        try
+        {
+            await _repository.DeleteAsync(selected.Id);
+            Links.Remove(selected);
+            BrowserStatus.Text = "הקישור נמחק";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "שגיאה במחיקה", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void LinksList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LinksList.SelectedItem is not LinkItem selected || Browser.CoreWebView2 is null) return;
+        if (!LinkAddress.TryNormalize(selected.Url, out var url))
+        {
+            BrowserStatus.Text = "הקישור אינו תקין ולכן לא נפתח";
+            return;
+        }
+        try
+        {
+            BrowserStatus.Text = $"טוען: {selected.Title}";
+            Browser.Source = new Uri(url);
+            await Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            BrowserStatus.Text = "לא ניתן לפתוח את הקישור";
+            MessageBox.Show(ex.Message, "שגיאה בפתיחת קישור", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+}
