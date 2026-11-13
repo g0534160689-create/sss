@@ -32,10 +32,3 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 [Run]
 Filename: "{tmp}\WebView2Bootstrapper.exe"; Parameters: "/silent /install"; StatusMsg: "מתקין רכיב דפדפן נדרש..."; Flags: waituntilterminated
 Filename: "{app}\{#AppExeName}"; Description: "הפעלת דעת אהרן"; Flags: nowait postinstall skipifsilent
-[Code]
-function IsWebView2Installed: Boolean;
-var Version: String;
-begin
-  Result := RegQueryStringValue(HKLM64, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F1E...}', 'pv', Version) and (Version <> '');
-  if not Result then Result := RegQueryStringValue(HKCU, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F1E...}', 'pv', Version) and (Version <> '');
-end;
