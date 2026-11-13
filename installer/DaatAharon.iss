@@ -30,7 +30,7 @@ Source: "WebView2Bootstrapper.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 [Run]
-Filename: "{tmp}\WebView2Bootstrapper.exe"; Parameters: "/silent /install"; StatusMsg: "מתקין רכיב דפדפן נדרש..."; Flags: waituntilterminated; Check: not IsWebView2Installed
+Filename: "{tmp}\WebView2Bootstrapper.exe"; Parameters: "/silent /install"; StatusMsg: "מתקין רכיב דפדפן נדרש..."; Flags: waituntilterminated
 Filename: "{app}\{#AppExeName}"; Description: "הפעלת דעת אהרן"; Flags: nowait postinstall skipifsilent
 [Code]
 function IsWebView2Installed: Boolean;
