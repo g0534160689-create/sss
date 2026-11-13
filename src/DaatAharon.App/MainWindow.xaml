@@ -15,11 +15,12 @@
                 <StackPanel DockPanel.Dock="Top">
                     <TextBlock Text="דעת אהרן" FontSize="26" FontWeight="Bold" Foreground="#17243B" />
                     <TextBlock Text="מרכז הקישורים" Margin="0,3,0,18" Foreground="#667085" />
-                    <TextBlock Text="קישור חדש" FontWeight="SemiBold" />
+                    <TextBlock Text="פרטי קישור" FontWeight="SemiBold" />
                     <TextBox x:Name="TitleInput" Margin="0,6,0,8" Height="36" Padding="8" ToolTip="שם הקישור" />
                     <TextBox x:Name="UrlInput" Margin="0,0,0,8" Height="36" Padding="8" FlowDirection="LeftToRight" ToolTip="https://example.com" />
                     <TextBox x:Name="CategoryInput" Margin="0,0,0,10" Height="36" Padding="8" Text="כללי" ToolTip="קטגוריה" />
-                    <Button Content="הוסף קישור" Height="40" Background="{StaticResource AccentBrush}" Foreground="White" BorderThickness="0" Click="AddLink_Click" />
+                    <Button Content="הוסף קישור" Height="38" Background="{StaticResource AccentBrush}" Foreground="White" BorderThickness="0" Click="AddLink_Click" />
+                    <Button Content="שמור שינויים בקישור מסומן" Height="36" Margin="0,6,0,0" Click="UpdateLink_Click" />
                     <TextBlock Text="הקישורים שלי" FontSize="17" FontWeight="SemiBold" Margin="0,22,0,8" />
                 </StackPanel>
                 <Button DockPanel.Dock="Bottom" Content="מחק קישור מסומן" Height="36" Margin="0,10,0,0" Click="DeleteLink_Click" />
