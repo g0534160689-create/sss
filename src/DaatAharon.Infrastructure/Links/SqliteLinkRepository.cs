@@ -64,19 +64,33 @@ public sealed class SqliteLinkRepository : ILinkRepository
     public async Task AddAsync(LinkItem link, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(link);
-        if (!LinkAddress.TryNormalize(link.Url, out var safeUrl))
-            throw new ArgumentException("Only valid absolute HTTP or HTTPS URLs are accepted.", nameof(link));
+        Validate(link, out var safeUrl);
 
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText = "INSERT INTO Links(Id, Title, Url, Category, CreatedUtc) VALUES($id, $title, $url, $category, $created);";
-        command.Parameters.AddWithValue("$id", link.Id.ToString("D"));
-        command.Parameters.AddWithValue("$title", link.Title.Trim());
-        command.Parameters.AddWithValue("$url", safeUrl);
-        command.Parameters.AddWithValue("$category", link.Category.Trim());
-        command.Parameters.AddWithValue("$created", link.CreatedUtc.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+        AddParameters(command, link, safeUrl);
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(LinkItem link, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(link);
+        Validate(link, out var safeUrl);
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE Links
+            SET Title = $title, Url = $url, Category = $category
+            WHERE Id = $id;
+            """;
+        AddParameters(command, link, safeUrl);
+        var affected = await command.ExecuteNonQueryAsync(cancellationToken);
+        if (affected == 0)
+            throw new KeyNotFoundException($"Link '{link.Id}' was not found.");
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -87,5 +101,24 @@ public sealed class SqliteLinkRepository : ILinkRepository
         command.CommandText = "DELETE FROM Links WHERE Id = $id;";
         command.Parameters.AddWithValue("$id", id.ToString("D"));
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static void Validate(LinkItem link, out string safeUrl)
+    {
+        if (string.IsNullOrWhiteSpace(link.Title) || link.Title.Trim().Length > 120)
+            throw new ArgumentException("Link title must contain 1 to 120 characters.", nameof(link));
+        if (string.IsNullOrWhiteSpace(link.Category) || link.Category.Trim().Length > 80)
+            throw new ArgumentException("Link category must contain 1 to 80 characters.", nameof(link));
+        if (!LinkAddress.TryNormalize(link.Url, out safeUrl))
+            throw new ArgumentException("Only valid absolute HTTP or HTTPS URLs are accepted.", nameof(link));
+    }
+
+    private static void AddParameters(SqliteCommand command, LinkItem link, string safeUrl)
+    {
+        command.Parameters.AddWithValue("$id", link.Id.ToString("D"));
+        command.Parameters.AddWithValue("$title", link.Title.Trim());
+        command.Parameters.AddWithValue("$url", safeUrl);
+        command.Parameters.AddWithValue("$category", link.Category.Trim());
+        command.Parameters.AddWithValue("$created", link.CreatedUtc.ToUniversalTime().ToString("O", System.Globalization.CultureInfo.InvariantCulture));
     }
 }
