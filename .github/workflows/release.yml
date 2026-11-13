@@ -55,7 +55,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Create portable ZIP
         shell: pwsh
-        run: Compress-Archive -Path .\\artifacts\\publish\\* -DestinationPath .\\artifacts\\DaatAharon-Portable-${{ steps.version.outputs.version }}-win-x64.zip -CompressionLevel Optimal
+        run: Compress-Archive -Path 'artifacts/publish/*' -DestinationPath 'artifacts/DaatAharon-Portable-${{ steps.version.outputs.version }}-win-x64.zip' -CompressionLevel Optimal
       - uses: actions/upload-artifact@v4
         with:
           name: DaatAharon-Windows-x64
