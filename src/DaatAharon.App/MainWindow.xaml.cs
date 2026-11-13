@@ -91,6 +91,7 @@ public partial class MainWindow : Window
     private bool TryReadForm(out string title, out string url, out string category)
     {
         title = TitleInput.Text.Trim();
+        url = string.Empty;
         category = string.IsNullOrWhiteSpace(CategoryInput.Text) ? "כללי" : CategoryInput.Text.Trim();
         if (title.Length is 0 or > 120 || category.Length > 80 ||
             !LinkAddress.TryNormalize(UrlInput.Text, out url))
