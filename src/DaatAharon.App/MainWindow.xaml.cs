@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using DaatAharon.Core.Links;
@@ -29,15 +30,15 @@ public partial class MainWindow : Window
             await _repository.InitializeAsync();
             foreach (var link in await _repository.GetAllAsync()) Links.Add(link);
             await Browser.EnsureCoreWebView2Async();
-            Browser.CoreWebView2.NavigationStarting += (_, args) =>
+            Browser.CoreWebView2.NavigationStarting += (sender, args) =>
             {
-                if (!LinkAddress.TryNormalize(args.Uri, out _))
+                if (!LinkAddress.TryNormalize(args.Uri, out var normalizedUrl))
                 {
                     args.Cancel = true;
                     BrowserStatus.Text = "הניווט נחסם: כתובת לא תקינה או פרוטוקול לא מאושר";
                 }
             };
-            Browser.CoreWebView2.NewWindowRequested += (_, args) => args.Handled = true;
+            Browser.CoreWebView2.NewWindowRequested += (sender, args) => args.Handled = true;
             BrowserStatus.Text = "מוכן — הקישורים נשמרים במחשב זה";
         }
         catch (Exception ex)
